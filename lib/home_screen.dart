@@ -1,6 +1,9 @@
+
 import 'package:chatgpt_flutter_app/compnents.dart';
 import 'package:chatgpt_flutter_app/palletes.dart';
 import 'package:flutter/material.dart';
+import 'package:speech_to_text/speech_recognition_result.dart';
+import 'package:speech_to_text/speech_to_text.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -10,18 +13,74 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  final SpeechToText speechToText = SpeechToText();
+  String lastWords='';
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    initSpeechToText();
+  }
+
+  /// this happens only once per deivce at start
+  Future <void> initSpeechToText() async {
+    await speechToText.initialize();
+    setState(() {
+
+    });
+  }
+  /// Each time to start a speech recognition session
+  Future<void> startListening() async {
+    if (speechToText.isAvailable) {
+      await speechToText.listen(onResult: onSpeechResult);
+    } else {
+      debugPrint('Speech recognition is not available');
+    }
+  }
+
+
+  /// Manually stop the active speech recognition session
+  /// Note that there are also timeouts that each platform enforces
+  /// and the SpeechToText plugin supports setting timeouts on the
+  /// listen method.
+  Future <void> stopListening() async {
+    await speechToText.stop();
+    setState(() {});
+  }
+
+  /// This is the callback that the SpeechToText plugin calls when
+  /// the platform returns recognized words.
+  void onSpeechResult(SpeechRecognitionResult result) {
+    setState(() {
+      lastWords = result.recognizedWords;
+      // print(lastWords.toString());
+    });
+  }
+
+  @override
+  void dispose() {
+    // TODO: implement dispose
+    super.dispose();
+    speechToText.stop();
+  }
+
+
   @override
   Widget build(BuildContext context) {
     return SafeArea(top: false,
       child: Scaffold(
-        appBar: AppBar(centerTitle: true,
+        appBar: AppBar(
+          backgroundColor: Pallete.whiteColor,
+          elevation: 0,
+          centerTitle: true,
           title: Container(child: Padding(
-            padding: const EdgeInsets.all(12.0),
+            padding: const EdgeInsets.all(10.0),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text("ChatGPT",style: TextStyle(fontSize: 18,fontWeight: FontWeight.bold,fontFamily: 'Cera Pro')),
-                Icon(Icons.star_rate, size: 18,)
+                Text("ChatGPT",style: TextStyle(fontSize: 15,fontWeight: FontWeight.bold,fontFamily: 'Cera Pro')),
+                Icon(Icons.star_rate, size: 16,)
               ],
             ),
           ),decoration: BoxDecoration(color: Color(
@@ -71,7 +130,17 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
         floatingActionButton: FloatingActionButton(
-          onPressed: () {  },
+          onPressed: () async{
+            if(await speechToText.hasPermission && await speechToText.isNotListening){
+              await startListening();
+            }
+            else if (speechToText.isListening){
+              await stopListening();
+            }else{
+              initSpeechToText();
+
+            }
+          },
 
           child: Icon(Icons.mic),
         ),
