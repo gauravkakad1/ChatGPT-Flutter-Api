@@ -1,1 +1,1 @@
-const String openApiKey='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';
+const String openAIAPIKey='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';
